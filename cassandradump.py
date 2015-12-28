@@ -2,6 +2,7 @@ import argparse
 import sys
 import itertools
 import codecs
+import six
 
 try:
     import cassandra
@@ -28,11 +29,18 @@ def log_quiet(msg):
         sys.stdout.flush()
 
 
+def fix_blob_encoder(session):
+    if six.PY2:
+        session.encoder.mapping[str] = session.encoder.cql_encode_bytes
+
+
 def table_to_cqlfile(session, keyspace, tablename, flt, tableval, filep):
     if flt is None:
         query = 'SELECT * FROM "' + keyspace + '"."' + tablename + '"'
     else:
         query = 'SELECT * FROM ' + flt
+
+    fix_blob_encoder(session)
 
     rows = session.execute(query)
 
